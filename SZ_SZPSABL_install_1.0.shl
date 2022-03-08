@@ -1,0 +1,56 @@
+#!/bin/ksh
+# Run this script as svc_banner
+
+#==========================================================================
+# Configuration
+#==========================================================================
+
+file_setup=SZ_SZPSABL_setup_1.0.sql
+file_pspec=SZ_SZPSABL.pks
+file_pbody=SZ_SZPSABL.pkb
+
+dir_setup=$CUSTOM_HOME/student/plus
+dir_procs=$CUSTOM_HOME/student/dbprocs
+
+#==========================================================================
+# Prepare source files
+#==========================================================================
+
+# Create custom source code directories if they don't already exist
+mkdir -p $dir_setup
+mkdir -p $dir_procs
+
+# Copy files to the custom source code tree
+cp $file_setup $dir_setup
+cp $file_pspec $dir_procs
+cp $file_pbody $dir_procs
+
+# Create a hard link in the $CUSTOM_LINKS directory for each file
+ln -f $dir_setup/$file_setup $CUSTOM_LINKS
+ln -f $dir_procs/$file_pspec $CUSTOM_LINKS
+ln -f $dir_procs/$file_pbody $CUSTOM_LINKS
+
+#==========================================================================
+# Compile DBProcs
+#==========================================================================
+cd $CUSTOM_LINKS
+sqlplus /nolog <<EOF
+SET HEADING OFF
+SET DEFINE OFF
+CONNECT baninst1/$DFLT_BANINST1_PASS
+SELECT 'USER=' || SYS_CONTEXT('userenv','session_user') || ', DB=' || SYS_CONTEXT('userenv','db_name') FROM dual;
+
+PROMPT Running $file_setup
+@$file_setup
+SHOW ERRORS
+
+PROMPT Running $file_pspec
+@$file_pspec
+SHOW ERRORS
+
+PROMPT Running $file_pbody
+@$file_pbody
+SHOW ERRORS
+
+exit
+EOF
